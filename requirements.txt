@@ -1,0 +1,9 @@
+django>=5.2
+djangorestframework
+django-cors-headers
+requests
+pillow
+django-simple-captcha
+alibabacloud_dypnsapi20170525
+alibabacloud_tea_openapi
+alibabacloud_tea_util
