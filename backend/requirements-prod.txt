@@ -1,0 +1,12 @@
+Django>=5.0
+djangorestframework
+django-cors-headers
+django-simple-captcha
+python-dotenv
+requests
+uvicorn
+gunicorn
+# Alibaba Cloud SMS
+alibabacloud_dypnsapi20170525
+alibabacloud_tea_openapi
+alibabacloud_tea_util

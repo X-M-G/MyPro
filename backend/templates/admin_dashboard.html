@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+    .dashboard-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .card-title {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+
+    .card-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .chart-container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="dashboard-card" style="flex: 1;">
+            <div class="card-title">{% trans "Total Users" %}</div>
+            <div class="card-value">{{ total_users }}</div>
+        </div>
+        <div class="dashboard-card" style="flex: 1;">
+            <div class="card-title">{% trans "Today's API Calls" %}</div>
+            <div class="card-value">{{ today_api_calls }}</div>
+        </div>
+        <div class="dashboard-card" style="flex: 1;">
+            <div class="card-title">{% trans "Total API Calls" %}</div>
+            <div class="card-value">{{ total_api_calls }}</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div id="apiChart" style="width: 100%; height: 400px;"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var chartDom = document.getElementById('apiChart');
+    var myChart = echarts.init(chartDom);
+    var option;
+
+    option = {
+        title: {
+            text: '{% trans "API Calls (Last 30 Days)" %}'
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        xAxis: {
+            type: 'category',
+            data: {{ chart_dates | safe }}
+        },
+    yAxis: {
+        type: 'value'
+    },
+    series: [
+        {
+            data: {{ chart_counts| safe }},
+        type: 'line',
+        smooth: true,
+        areaStyle: {}
+            }
+    ]
+    };
+
+    option && myChart.setOption(option);
+
+    window.addEventListener('resize', function () {
+        myChart.resize();
+    });
+</script>
+{% endblock %}

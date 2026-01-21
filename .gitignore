@@ -1,24 +1,19 @@
-# 1. 先忽略根目录下的所有内容
-*
+# --- 忽略不需要同步的顶级文件夹 ---
+.agent/
+.shared/
+支付宝开放平台密钥工具/
 
-# 2. 允许同步的文件和文件夹（白名单）
-!.gitignore
-!backend/
-!sora/
-!requirements.txt
+# --- 忽略 backend 下的特定内容 ---
+backend/db.sqlite3
+backend/media/
+backend/__pycache__/
 
-# 3. 排除特定文件和文件夹（即使它们在 backend 目录内）
-# 忽略任何位置下的 .env 文件
+# --- 忽略 sora 下的依赖 ---
+sora/node_modules/
+
+# --- 全局忽略所有 .env 配置文件 ---
 **/.env
 
-# 排除后端本地数据库
-backend/db.sqlite3
-
-# 排除后端媒体文件上传目录
-backend/media/
-
-# 附加：忽略 Python 和前端生成的缓存/依赖
-**/__pycache__/
-**/*.pyc
-**/node_modules/
+# --- 忽略系统缓存 ---
 .DS_Store
+Thumbs.db

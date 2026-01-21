@@ -1,0 +1,63 @@
+/* Base styles - Professional Light theme adjustments */
+:root {
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text-main);
+  background: var(--color-background);
+  line-height: 1.6;
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-300);
+  border-radius: 10px;
+  border: 2px solid var(--bg-100);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-200);
+}
+
+/* Text Selection */
+::selection {
+  background: var(--color-primary-glow);
+  color: var(--color-primary);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

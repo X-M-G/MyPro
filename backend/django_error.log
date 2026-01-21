@@ -1,0 +1,46 @@
+[2025-12-08 23:48:30 +0800] [71298] [INFO] Starting gunicorn 23.0.0
+[2025-12-08 23:48:30 +0800] [71298] [INFO] Listening at: http://0.0.0.0:8000 (71298)
+[2025-12-08 23:48:30 +0800] [71298] [INFO] Using worker: gthread
+[2025-12-08 23:48:30 +0800] [71299] [INFO] Booting worker with pid: 71299
+[2025-12-08 23:48:30 +0800] [71300] [INFO] Booting worker with pid: 71300
+[2025-12-08 23:50:00 +0800] [71298] [INFO] Handling signal: int
+[2025-12-08 15:50:00 +0000] [71299] [INFO] Worker exiting (pid: 71299)
+[2025-12-08 15:50:00 +0000] [71300] [INFO] Worker exiting (pid: 71300)
+[2025-12-08 23:50:00 +0800] [71298] [ERROR] Worker (pid:71299) was sent SIGINT!
+[2025-12-08 23:50:00 +0800] [71298] [ERROR] Worker (pid:71300) was sent SIGINT!
+[2025-12-08 23:50:00 +0800] [71298] [INFO] Shutting down: Master
+[2025-12-08 23:50:03 +0800] [71785] [INFO] Starting gunicorn 23.0.0
+[2025-12-08 23:50:03 +0800] [71785] [INFO] Listening at: http://0.0.0.0:8000 (71785)
+[2025-12-08 23:50:03 +0800] [71785] [INFO] Using worker: gthread
+[2025-12-08 23:50:03 +0800] [71786] [INFO] Booting worker with pid: 71786
+[2025-12-08 23:50:03 +0800] [71787] [INFO] Booting worker with pid: 71787
+[2025-12-09 10:45:26 +0800] [71785] [INFO] Handling signal: int
+[2025-12-09 02:45:26 +0000] [71786] [INFO] Worker exiting (pid: 71786)
+[2025-12-09 02:45:26 +0000] [71787] [INFO] Worker exiting (pid: 71787)
+[2025-12-09 10:45:26 +0800] [71785] [INFO] Shutting down: Master
+[2025-12-09 20:36:45 +0800] [8358] [INFO] Starting gunicorn 23.0.0
+[2025-12-09 20:36:45 +0800] [8358] [INFO] Listening at: http://0.0.0.0:8000 (8358)
+[2025-12-09 20:36:45 +0800] [8358] [INFO] Using worker: gthread
+[2025-12-09 20:36:45 +0800] [8359] [INFO] Booting worker with pid: 8359
+[2025-12-09 20:36:45 +0800] [8360] [INFO] Booting worker with pid: 8360
+[2025-12-09 20:36:45 +0800] [8361] [INFO] Booting worker with pid: 8361
+[2025-12-09 20:36:45 +0800] [8362] [INFO] Booting worker with pid: 8362
+[2025-12-09 20:36:57 +0800] [8358] [INFO] Handling signal: int
+[2025-12-09 20:36:57 +0800] [8362] [INFO] Worker exiting (pid: 8362)
+[2025-12-09 20:36:57 +0800] [8359] [INFO] Worker exiting (pid: 8359)
+[2025-12-09 20:36:57 +0800] [8361] [INFO] Worker exiting (pid: 8361)
+[2025-12-09 20:36:57 +0800] [8360] [INFO] Worker exiting (pid: 8360)
+[2025-12-09 20:36:57 +0800] [8358] [INFO] Shutting down: Master
+[2025-12-09 20:37:00 +0800] [8363] [INFO] Starting gunicorn 23.0.0
+[2025-12-09 20:37:00 +0800] [8363] [INFO] Listening at: http://0.0.0.0:8000 (8363)
+[2025-12-09 20:37:00 +0800] [8363] [INFO] Using worker: gthread
+[2025-12-09 20:37:00 +0800] [8364] [INFO] Booting worker with pid: 8364
+[2025-12-09 20:37:00 +0800] [8365] [INFO] Booting worker with pid: 8365
+[2025-12-09 20:37:00 +0800] [8366] [INFO] Booting worker with pid: 8366
+[2025-12-09 20:37:00 +0800] [8367] [INFO] Booting worker with pid: 8367
+[2025-12-09 20:37:56 +0800] [8363] [INFO] Handling signal: int
+[2025-12-09 20:37:56 +0800] [8365] [INFO] Worker exiting (pid: 8365)
+[2025-12-09 20:37:56 +0800] [8367] [INFO] Worker exiting (pid: 8367)
+[2025-12-09 20:37:56 +0800] [8364] [INFO] Worker exiting (pid: 8364)
+[2025-12-09 20:37:56 +0800] [8366] [INFO] Worker exiting (pid: 8366)
+[2025-12-09 20:37:57 +0800] [8363] [INFO] Shutting down: Master

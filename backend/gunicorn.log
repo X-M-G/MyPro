@@ -1,0 +1,3 @@
+Forbidden: /api/auth/me/
+Bad Request: /api/videos/prompt/generate/
+Bad Request: /api/videos/prompt/generate/
