@@ -37,14 +37,23 @@ export default {
                     eta: '4-8 分钟',
                     highlights: '基础视频生成'
                 },
-                sora2Pro: {
-                    name: 'sora2-pro',
+                sora2ProC1: {
+                    name: 'sora2-pro 通道1',
                     features: '文生视频、图生视频',
                     duration: '15/25 秒',
                     resolution: '1080P (全高清)',
                     cost: '300',
                     eta: '10-15 分钟',
                     highlights: '高清画质、更长视频、音频同步'
+                },
+                sora2ProC2: {
+                    name: 'sora2-pro 通道2',
+                    features: '文生视频、图生视频',
+                    duration: '15/25 秒',
+                    resolution: '1080P (全高清)',
+                    cost: '500',
+                    eta: '10-15 分钟',
+                    highlights: '接入新线路、响应更迅速'
                 },
                 assistant: {
                     name: '提示词生成助手',
@@ -208,6 +217,8 @@ export default {
         generationFailed: '生成失败',
         readyToCreate: '准备就绪',
         masterpiece: '您的AI杰作将在这里显示',
+        channel1: '通道1',
+        channel2: '通道2',
         recentCreations: '最近的作品',
         showHistory: '显示历史记录',
         hideHistory: '隐藏历史记录',

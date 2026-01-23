@@ -49,11 +49,11 @@ const applyFullScreenPrompt = () => {
 }
 
 const availableDurations = computed(() => {
-  return model.value === 'sora2-pro' ? [15, 25] : [10, 15]
+  return ['sora2-pro', 'sora2-pro-c1', 'sora2-pro-c2'].includes(model.value) ? [15, 25] : [10, 15]
 })
 
 watch(model, (newModel) => {
-  if (newModel === 'sora2-pro') {
+  if (['sora2-pro', 'sora2-pro-c1', 'sora2-pro-c2'].includes(newModel)) {
     duration.value = 25
   } else {
     duration.value = 15
@@ -281,8 +281,9 @@ onMounted(() => {
                 <label class="label">{{ t("dashboard.model") || "AI Model" }}</label>
                 <div class="select-wrapper">
                   <select v-model="model" class="select modern-select">
-                    <option value="sora2">Sora 2</option>
-                    <option value="sora2-pro">Sora2 Pro</option>
+                    <option value="sora2">Sora2</option>
+                    <option value="sora2-pro-c1">Sora2 Pro {{ t('dashboard.channel1') }}</option>
+                    <option value="sora2-pro-c2">Sora2 Pro {{ t('dashboard.channel2') }}</option>
                   </select>
                 </div>
               </div>
@@ -313,7 +314,11 @@ onMounted(() => {
               <div class="cost-info">
                 <div class="coin">C</div>
                 <span>
-                  {{ t("dashboard.cost") }}: <strong>{{ model === "sora2-pro" ? 300 : 30 }}</strong> {{ t("dashboard.credits") }}
+                  {{ t("dashboard.cost") }}: 
+                  <strong>
+                    {{ model === "sora2-pro-c2" ? 500 : (['sora2-pro', 'sora2-pro-c1'].includes(model) ? 300 : 30) }}
+                  </strong> 
+                  {{ t("dashboard.credits") }}
                 </span>
               </div>
               <button

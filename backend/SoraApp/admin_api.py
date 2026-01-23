@@ -71,6 +71,8 @@ def admin_dashboard_stats(request):
             target_key = m
             if m == 'sora2':
                 target_key = 'sora'
+            elif m in ['sora2-pro-c1', 'sora2-pro-c2']:
+                target_key = 'sora2-pro'
             
             if target_key in video_detail_stats:
                 if s in ['SUCCESS', 'FAILED']:

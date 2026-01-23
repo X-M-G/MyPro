@@ -37,7 +37,14 @@ class GenerateVideoView(APIView):
         ref_image = request.data.get('ref_image') 
 
         # Determine credit cost
-        cost = 300 if model == 'sora2-pro' else 30
+        if model == 'sora2-pro-c1':
+            cost = 300
+        elif model == 'sora2-pro-c2':
+            cost = 500
+        elif model == 'sora2-pro': # Backward compatibility if needed
+            cost = 300
+        else:
+            cost = 30
         
         if not prompt:
             return Response({"error": "Prompt is required"}, status=status.HTTP_400_BAD_REQUEST)

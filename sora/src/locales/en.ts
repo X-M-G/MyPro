@@ -37,14 +37,23 @@ export default {
           eta: '4-8 Minutes',
           highlights: 'Basic Video Generation'
         },
-        sora2Pro: {
-          name: 'sora2-pro',
+        sora2ProC1: {
+          name: 'sora2-pro Channel 1',
           features: 'Text-to-Video, Image-to-Video',
           duration: '15/25 Seconds',
           resolution: '1080P (Full HD)',
           cost: '300',
           eta: '10-15 Minutes',
           highlights: 'HD Quality, Longer Video, Sync Audio'
+        },
+        sora2ProC2: {
+          name: 'sora2-pro Channel 2',
+          features: 'Text-to-Video, Image-to-Video',
+          duration: '15/25 Seconds',
+          resolution: '1080P (Full HD)',
+          cost: '500',
+          eta: '10-15 Minutes',
+          highlights: 'New Line, Faster Response'
         },
         assistant: {
           name: 'Prompt Assistant',
@@ -207,6 +216,8 @@ export default {
     generationFailed: 'Generation Failed',
     readyToCreate: 'Ready to Create',
     masterpiece: 'Your AI masterpiece will appear here',
+    channel1: 'Channel 1',
+    channel2: 'Channel 2',
     recentCreations: 'Recent Creations',
     showHistory: 'Show History',
     hideHistory: 'Hide History',

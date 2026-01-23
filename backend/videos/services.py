@@ -43,9 +43,16 @@ class SoraService:
         try:
             task = VideoTask.objects.get(id=task_id)
 
-            if model == "sora2-pro":
-                # Use Wuyin Keji API for sora2-pro
+            if model in ["sora2-pro", "sora2-pro-c1"]:
+                # Use Wuyin Keji API for sora2-pro channel 1
                 thread = threading.Thread(target=SoraService._handle_wuyin_task, args=(task.id, prompt, ratio, duration, ref_image))
+                thread.start()
+                return True
+
+            if model == "sora2-pro-c2":
+                # Use Apimart (marketai) for channel 2
+                model_to_call = "sora-2-pro"
+                thread = threading.Thread(target=SoraService._handle_apimart_task, args=(task.id, prompt, ratio, duration, ref_image, model_to_call))
                 thread.start()
                 return True
 
@@ -357,7 +364,13 @@ class SoraService:
                     task.user.refresh_from_db()
                     
                     # Refund based on model
-                    refund_amount = 300 if task.model == 'sora2-pro' else 30
+                    if task.model == 'sora2-pro-c2':
+                        refund_amount = 500
+                    elif task.model in ['sora2-pro', 'sora2-pro-c1']:
+                        refund_amount = 300
+                    else:
+                        refund_amount = 30
+
                     task.user.credits += refund_amount
                     task.user.save()
                     
@@ -387,7 +400,7 @@ class SoraService:
         }
         
         payload = {
-            "model": "sora-2", # Hardcode as per user request
+            "model": model, # Use the model passed in (sora-2 or sora-2-pro)
             "prompt": prompt,
             "duration": duration,
             "aspect_ratio": ratio,
