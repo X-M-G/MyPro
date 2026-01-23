@@ -31,8 +31,9 @@ export const useVideoStore = defineStore('video', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Prompt Task persistence
+  // Prompt & Chat Task persistence
   const activePromptTask = ref<any>(null)
+  const activeChatTask = ref<any>(null)
 
   const authStore = useAuthStore()
 
@@ -43,7 +44,7 @@ export const useVideoStore = defineStore('video', () => {
 
   async function generateVideo(prompt: string, ratio: string, duration: number, refImage: string | null = null, model: string = 'sora2') {
     loading.value = true
-    error.value = null // 重置错误
+    error.value = null
 
     try {
       const payload: any = {
@@ -54,15 +55,13 @@ export const useVideoStore = defineStore('video', () => {
         model
       }
 
-      // 注意：这里建议临时增加 timeout 时间，防止网络波动导致误报超时
       const response = await api.post('videos/generate/', payload, {
-        timeout: 30000 // 将超时时间单独延长到 30秒
+        timeout: 30000
       })
 
       activeTask.value = response.data
       tasks.value.unshift(response.data)
 
-      // Deduct credits based on model (300 for sora2-pro, 30 for sora)
       if (authStore.user) {
         const cost = model === 'sora2-pro' ? 300 : 30
         authStore.user.credits -= cost
@@ -72,35 +71,26 @@ export const useVideoStore = defineStore('video', () => {
       return true
 
     } catch (e: any) {
-      console.error("Generate Video Error Debug:", e) // 方便调试
+      console.error("Generate Video Error Debug:", e)
 
-      // --- 核心修复逻辑 ---
-
-      // 1. 处理超时错误 (没有 response 对象)
       if (e.code === 'ECONNABORTED' || e.message?.includes('timeout')) {
         error.value = "Request timed out. The server is busy, please try again."
         return false
       }
 
-      // 2. 处理后端返回的明确错误 (429, 503, 400 等)
       if (e.response && e.response.data) {
-        // 优先读取 backend 返回的 "error" 字段
         if (e.response.data.error) {
           error.value = e.response.data.error
         }
-        // Django DRF 有时会返回 "detail" 字段 (例如权限问题)
         else if (e.response.data.detail) {
           error.value = e.response.data.detail
         }
-        // 如果返回的是一个对象但没有特定key，尝试序列化显示
         else {
-          // 避免显示 [object Object]
           error.value = typeof e.response.data === 'string'
             ? e.response.data
             : "Server returned an error. Check console for details."
         }
       }
-      // 3. 处理网络断开等其他无响应错误
       else if (e.message) {
         error.value = e.message
       }
@@ -114,13 +104,24 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  async function fetchHistory() {
+  async function fetchHistory(force = false) {
+    if (!force && tasks.value.length > 0) {
+      api.get('videos/list/').then(response => {
+        tasks.value = response.data
+        tasks.value.forEach(task => {
+          if (task.status === 'PENDING' || task.status === 'PROCESSING') {
+            pollTask(task.id)
+          }
+        })
+      })
+      return
+    }
+
     loading.value = true
     try {
       const response = await api.get('videos/list/')
       tasks.value = response.data
 
-      // Resume polling for active tasks
       tasks.value.forEach(task => {
         if (task.status === 'PENDING' || task.status === 'PROCESSING') {
           pollTask(task.id)
@@ -131,7 +132,6 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  // Check for any active prompt generation task on load
   async function checkActivePromptTask() {
     try {
       const response = await api.get('videos/prompt/active/')
@@ -146,11 +146,48 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
+  async function checkActiveChatTask() {
+    try {
+      const response = await api.get('videos/ai-chat/active/')
+      if (response.data && response.data.id) {
+        activeChatTask.value = response.data
+        pollChatTask(response.data.id)
+      } else {
+        activeChatTask.value = null
+      }
+    } catch (e) {
+      console.error("Failed to check active chat task:", e)
+    }
+  }
+
+  async function handleAIChat(prompt: string) {
+    try {
+      activeChatTask.value = null
+      const response = await api.post('videos/ai-chat/generate/', { prompt })
+
+      if (response.data.task_id) {
+        activeChatTask.value = {
+          id: response.data.task_id,
+          status: 'PENDING',
+          raw_prompt: prompt
+        }
+        pollChatTask(response.data.task_id)
+        await authStore.fetchUser()
+        return true
+      }
+      return false
+    } catch (e: any) {
+      console.error(e)
+      if (e.response && e.response.data && e.response.data.error) {
+        throw new Error(e.response.data.error)
+      }
+      throw e
+    }
+  }
+
   async function optimizePrompt(concept: string, style: string, language: string, duration: string, model: string = 'sora2') {
     try {
-      // Clean up previous active task state
       activePromptTask.value = null
-
       const response = await api.post('videos/prompt/generate/', {
         prompt: concept,
         style,
@@ -160,23 +197,19 @@ export const useVideoStore = defineStore('video', () => {
       })
 
       if (response.data.task_id) {
-        // Async flow
         activePromptTask.value = {
           id: response.data.task_id,
           status: 'PENDING',
           raw_prompt: concept
         }
         pollPromptTask(response.data.task_id)
-        // Credits are deducted on backend start
         await authStore.fetchUser()
-        return true // Signal started
+        return true
       } else {
-        // Fallback sync flow (if backend didn't change for some reason, though we changed it)
         return response.data.prompt
       }
     } catch (e: any) {
       console.error(e)
-      // Extract error message
       if (e.response && e.response.data && e.response.data.error) {
         throw new Error(e.response.data.error)
       }
@@ -184,7 +217,6 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  // 获取提示词历史记录
   async function fetchPromptHistory(page = 1) {
     historyLoading.value = true
     try {
@@ -201,11 +233,9 @@ export const useVideoStore = defineStore('video', () => {
     }
   }
 
-  // 删除提示词历史记录
   async function deletePromptHistory(id: number) {
     try {
       await api.delete(`videos/prompt/history/${id}/`)
-      // 从本地列表中移除
       promptHistories.value = promptHistories.value.filter(h => h.id !== id)
     } catch (error: any) {
       console.error('Failed to delete prompt history:', error)
@@ -215,6 +245,7 @@ export const useVideoStore = defineStore('video', () => {
 
   const pollIntervals = new Map<number, number>()
   const promptPollInterval = ref<number | null>(null)
+  const chatPollInterval = ref<number | null>(null)
 
   function pollTask(taskId: number) {
     if (pollIntervals.has(taskId)) return
@@ -225,7 +256,6 @@ export const useVideoStore = defineStore('video', () => {
         const response = await api.get(`videos/${taskId}/`)
         const task = response.data
 
-        // Update local task
         const index = tasks.value.findIndex(t => t.id === task.id)
         if (index !== -1) tasks.value[index] = task
         if (activeTask.value && activeTask.value.id === task.id) activeTask.value = task
@@ -233,7 +263,6 @@ export const useVideoStore = defineStore('video', () => {
         if (task.status === 'SUCCESS' || task.status === 'FAILED') {
           clearInterval(intervalId)
           pollIntervals.delete(taskId)
-          // Refresh user credits if failed (refund)
           if (task.status === 'FAILED') authStore.fetchUser()
         }
       } catch (e) {
@@ -253,7 +282,6 @@ export const useVideoStore = defineStore('video', () => {
       try {
         const response = await api.get(`videos/prompt/task/${taskId}/`)
         const task = response.data
-
         activePromptTask.value = task
 
         if (task.status === 'SUCCESS' || task.status === 'FAILED') {
@@ -261,11 +289,8 @@ export const useVideoStore = defineStore('video', () => {
             clearInterval(promptPollInterval.value)
             promptPollInterval.value = null
           }
-
-          if (task.status === 'SUCCESS') {
-            // Refresh history
-            fetchPromptHistory()
-          }
+          if (task.status === 'SUCCESS') fetchPromptHistory()
+          else authStore.fetchUser()
         }
       } catch (e) {
         if (promptPollInterval.value) {
@@ -277,16 +302,47 @@ export const useVideoStore = defineStore('video', () => {
     }, 2000)
   }
 
+  function pollChatTask(taskId: number) {
+    if (chatPollInterval.value) return
+
+    // @ts-ignore
+    chatPollInterval.value = setInterval(async () => {
+      try {
+        const response = await api.get(`videos/prompt/task/${taskId}/`)
+        const task = response.data
+        activeChatTask.value = task
+
+        if (task.status === 'SUCCESS' || task.status === 'FAILED') {
+          if (chatPollInterval.value) {
+            clearInterval(chatPollInterval.value)
+            chatPollInterval.value = null
+          }
+          if (task.status === 'SUCCESS') fetchPromptHistory()
+          else authStore.fetchUser()
+        }
+      } catch (e) {
+        if (chatPollInterval.value) {
+          clearInterval(chatPollInterval.value)
+          chatPollInterval.value = null
+        }
+        activeChatTask.value = null
+      }
+    }, 2000)
+  }
+
   return {
     tasks,
     activeTask,
     loading,
     error,
     activePromptTask,
+    activeChatTask,
     generateVideo,
     fetchHistory,
     checkActivePromptTask,
+    checkActiveChatTask,
     optimizePrompt,
+    handleAIChat,
     promptHistories,
     historyLoading,
     fetchPromptHistory,

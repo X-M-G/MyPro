@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { 
   Sparkles, Copy, ArrowRight, Wand2, Loader2, AlertTriangle, 
   Check, HelpCircle, ChevronDown, ChevronUp, Clock, Trash2,
-  Type, Palette, Globe, Zap
+  Type, Palette, Globe, Zap, Maximize2, Eye, X
 } from 'lucide-vue-next'
 import { toast } from '@/utils/toast'
 
@@ -18,8 +18,38 @@ const language = ref('Chinese')
 const optimizedPrompt = ref('')
 const isOptimizing = ref(false)
 const errorMsg = ref('')
+const isInputExpanded = ref(false)
+const isFullScreen = ref(false)
+const fullScreenConcept = ref('')
 const showTips = ref(false)
 const showHistory = ref(true)
+const selectedHistoryItem = ref<any>(null)
+
+const openHistoryDetail = (item: any) => {
+    selectedHistoryItem.value = item
+}
+
+const closeHistoryDetail = () => {
+    selectedHistoryItem.value = null
+}
+
+import { computed } from 'vue'
+
+const filteredHistory = computed(() => {
+  return videoStore.promptHistories.filter(h => h.style !== 'Chat')
+})
+
+const toggleFullScreen = () => {
+  if (!isFullScreen.value) {
+    fullScreenConcept.value = concept.value
+    isFullScreen.value = true
+  }
+}
+
+const applyFullScreen = () => {
+  concept.value = fullScreenConcept.value
+  isFullScreen.value = false
+}
 
 const styles = ['Cinematic', '3D Animation', 'Anime', 'Photorealistic', 'Vintage Film', 'Cyberpunk', 'Watercolor']
 const languages = ['English', 'Chinese', 'Spanish', 'Japanese', 'French']
@@ -100,16 +130,6 @@ function copyHistoryPrompt(prompt: string) {
     toast.success(t('common.copied'))
 }
 
-function useHistoryPrompt(history: any) {
-    concept.value = history.raw_prompt
-    style.value = history.style
-    language.value = history.language
-    // Optional: if history has duration, set it. Otherwise default.
-    duration.value = history.duration || '10s' 
-    optimizedPrompt.value = history.optimized_prompt
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
 function toggleTips() {
     showTips.value = !showTips.value
 }
@@ -122,6 +142,37 @@ function formatDate(dateString: string) {
 
 <template>
   <div class="page-container prompt-assistant">
+    <!-- Full-screen Concept Editor Overlay -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isFullScreen" class="fullscreen-editor-overlay">
+          <div class="editor-container glass-card">
+            <header class="editor-header">
+              <div class="header-info">
+                <Sparkles :size="20" class="text-primary" />
+                <h3>{{ t("promptAssistant.inputLabel") }} - {{ t("common.edit") || "Edit" }}</h3>
+              </div>
+              <div class="header-actions">
+                <button class="btn btn-ghost btn-sm" @click="fullScreenConcept = ''">
+                  {{ t("common.clear") || "Clear" }}
+                </button>
+                <button class="btn btn-primary btn-sm" @click="applyFullScreen">
+                  {{ t("common.confirm") }}
+                </button>
+              </div>
+            </header>
+            <main class="editor-main">
+              <textarea
+                v-model="fullScreenConcept"
+                class="fullscreen-textarea"
+                :placeholder="t('promptAssistant.inputPlaceholder')"
+                autofocus
+              ></textarea>
+            </main>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
     <header class="page-header animate-fade-up">
        <div class="header-badge">
          <Wand2 :size="16" class="text-primary" />
@@ -148,13 +199,20 @@ function formatDate(dateString: string) {
           </div>
           
           <div class="form-body">
-            <div class="input-group">
+            <div class="input-group" :class="{ 'expanded': isInputExpanded }">
               <textarea 
                 v-model="concept" 
                 class="textarea modern-textarea" 
                 :placeholder="t('promptAssistant.inputPlaceholder')"
-                rows="5"
+                :rows="isInputExpanded ? 15 : 5"
               ></textarea>
+              <button 
+                class="btn-expand" 
+                @click="toggleFullScreen"
+                :title="t('common.expand')"
+              >
+                <Maximize2 :size="16" />
+              </button>
             </div>
 
             <div class="config-grid">
@@ -198,7 +256,7 @@ function formatDate(dateString: string) {
             <div class="action-footer">
               <div class="cost-info">
                 <Zap :size="14" class="text-warning" />
-                <span>{{ t('promptAssistant.cost') }}: <strong>10</strong> {{ t('dashboard.credits') }}</span>
+                <span>{{ t('promptAssistant.cost') }}: <strong>20</strong> {{ t('dashboard.credits') }}</span>
               </div>
               
               <button 
@@ -228,7 +286,12 @@ function formatDate(dateString: string) {
             <h2 class="card-title"><Sparkles :size="20" /> {{ t('promptAssistant.result') }}</h2>
           </div>
           
-          <div v-if="optimizedPrompt" class="result-content animate-fade-in">
+          <div v-if="isOptimizing" class="result-loading-state animate-fade-in">
+            <Loader2 class="animate-spin text-primary" :size="48" />
+            <p>{{ t('promptAssistant.enhancing') }}...</p>
+          </div>
+          
+          <div v-else-if="optimizedPrompt" class="result-content animate-fade-in">
             <div class="prompt-display">
               <p>{{ optimizedPrompt }}</p>
               <div class="display-glow"></div>
@@ -272,13 +335,13 @@ function formatDate(dateString: string) {
               <Loader2 class="animate-spin" :size="32" />
             </div>
 
-            <div v-else-if="videoStore.promptHistories.length === 0" class="empty-history">
+            <div v-else-if="filteredHistory.length === 0" class="empty-history">
               <p>{{ t('promptAssistant.noHistory') }}</p>
             </div>
 
             <div v-else class="history-grid">
               <div 
-                v-for="item in videoStore.promptHistories" 
+                v-for="item in filteredHistory" 
                 :key="item.id" 
                 class="history-card"
               >
@@ -302,8 +365,8 @@ function formatDate(dateString: string) {
                 </div>
 
                 <div class="history-item-actions">
-                  <button @click="useHistoryPrompt(item)" class="action-pill primary" title="Use">
-                    <ArrowRight :size="14" />
+                  <button @click="openHistoryDetail(item)" class="action-pill" title="View Detail">
+                    <Eye :size="14" />
                   </button>
                   <button @click="copyHistoryPrompt(item.optimized_prompt)" class="action-pill" title="Copy">
                     <Copy :size="14" />
@@ -315,6 +378,54 @@ function formatDate(dateString: string) {
         </transition>
       </div>
     </section>
+
+    <!-- History Detail Modal -->
+    <Transition name="fade">
+      <div v-if="selectedHistoryItem" class="modal-overlay" @click.self="closeHistoryDetail">
+        <div class="modal-content glass-card animate-scale-up">
+          <div class="modal-header">
+            <div class="title-info">
+              <Clock :size="18" class="text-primary" />
+              <h3>{{ t('common.details') }}</h3>
+              <span class="modal-date">{{ formatDate(selectedHistoryItem.created_at) }}</span>
+            </div>
+            <button @click="closeHistoryDetail" class="close-btn">
+              <X :size="20" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-section">
+              <div class="section-label">
+                <Type :size="16" />
+                <span>{{ t('promptAssistant.concept') }}</span>
+              </div>
+              <div class="section-content question-content">
+                {{ selectedHistoryItem.raw_prompt }}
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="section-label">
+                <Sparkles :size="16" />
+                <span>{{ t('promptAssistant.optimized') }}</span>
+              </div>
+              <div class="section-content response-content">
+                <div class="prompt-meta" style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+                  <span class="tag style-tag">{{ selectedHistoryItem.style }}</span>
+                  <span class="tag lang-tag">{{ selectedHistoryItem.language }}</span>
+                  <span class="tag duration-tag" v-if="selectedHistoryItem.duration">{{ selectedHistoryItem.duration }}</span>
+                </div>
+                <p>{{ selectedHistoryItem.optimized_prompt }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="copyHistoryPrompt(selectedHistoryItem.optimized_prompt)" class="btn btn-secondary">
+              <Copy :size="16" /> {{ t('common.copy') || 'Copy' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -433,6 +544,42 @@ function formatDate(dateString: string) {
   outline: none;
 }
 
+.input-group {
+  position: relative;
+}
+
+.modern-textarea {
+  min-height: 180px;
+  transition: min-height 0.3s ease;
+}
+
+.input-group.expanded .modern-textarea {
+  min-height: 480px;
+}
+
+.btn-expand {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(186, 230, 253, 0.5);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #0369a1;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.btn-expand:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #7dd3fc;
+}
+
 .config-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -476,6 +623,27 @@ function formatDate(dateString: string) {
 }
 
 /* Result Card Enhancement */
+.result-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.result-loading-state p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .result-card.has-content {
   border-color: var(--primary-200);
   background: var(--bg-100);
@@ -677,5 +845,236 @@ function formatDate(dateString: string) {
   .main-grid {
     grid-template-columns: 1fr;
   }
+}
+.fullscreen-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.editor-container {
+  width: 95vw;
+  height: 90vh;
+  max-width: 1400px;
+  background: var(--bg-100);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.editor-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-100);
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-info h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.editor-main {
+  flex: 1;
+  padding: 1.5rem;
+  background: var(--bg-100);
+  overflow: hidden;
+}
+
+.fullscreen-textarea {
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: #0369a1;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.fullscreen-textarea:focus {
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 4px rgba(186, 230, 253, 0.4);
+}
+
+@media (max-width: 768px) {
+  .editor-container {
+    height: 95vh;
+    width: 98vw;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 2rem;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  background: white;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-100);
+}
+
+.title-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title-info h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modal-date {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0.5rem;
+  border-radius: 50%;
+}
+
+.close-btn:hover {
+  background: var(--bg-200);
+  color: var(--color-text-main);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.section-content {
+  padding: 1.25rem;
+  border-radius: 12px;
+  background: var(--bg-100);
+  border: 1px solid var(--bg-300);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.question-content {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.response-content p {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  color: var(--color-text-main);
+}
+
+.modal-footer {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--bg-100);
+}
+
+.duration-tag {
+  background: var(--bg-300);
+  color: var(--color-text-main);
+}
+
+/* Animations */
+.animate-scale-up {
+  animation: scaleUp 0.3s ease-out;
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

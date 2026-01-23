@@ -1,4 +1,4 @@
-// Chinese (Simplified) locale
+﻿// Chinese (Simplified) locale
 export default {
     home: {
         hero: {
@@ -51,9 +51,18 @@ export default {
                     features: '构建高质量提示词',
                     duration: '-',
                     resolution: '-',
-                    cost: '10',
+                    cost: '20',
                     eta: '实时',
                     highlights: '提升生成效果'
+                },
+                chatAssistant: {
+                    name: '大模型对话助手',
+                    features: 'GPT-5.1 智能对话',
+                    duration: '-',
+                    resolution: '-',
+                    cost: '20',
+                    eta: '实时',
+                    highlights: '深度理解，辅助创作'
                 }
             },
             details: {
@@ -68,6 +77,7 @@ export default {
         dashboard: '仪表盘',
         generator: '视频生成',
         assistant: '提示词助手',
+        chatAssistant: '大模型对话',
         history: '生成历史',
         profile: '个人中心',
         credits: '我的积分',
@@ -80,6 +90,7 @@ export default {
         error: '错误',
         success: '成功',
         cancel: '取消',
+        clear: '清空',
         confirm: '确认',
         back: '返回',
         save: '保存',
@@ -98,7 +109,8 @@ export default {
         show: '显示',
         search: '搜索',
         actions: '操作',
-        clickDetails: '点击查看详情'
+        clickDetails: '点击查看详情',
+        details: '详情'
     },
 
     auth: {
@@ -295,7 +307,7 @@ export default {
     },
 
     promptAssistant: {
-        title: 'AI Prompt Assistant',
+        title: '提示词助手',
         subtitle: '通过AI增强您的提示词',
         guideLinkText: '官方提示词撰写指南：',
         guideLink: 'https://cookbook.openai.com/examples/sora/sora2_prompting_guide',
@@ -343,6 +355,24 @@ export default {
             outputLanguageTitle: '输出语言',
             outputLanguageDesc: '指定优化提示词输出使用的语言。'
         }
+    },
+    chatAssistant: {
+        title: '大模型对话助手',
+        subtitle: '基于 GPT-5.1 的全能 AI 对话伙伴',
+        inputLabel: '发送消息',
+        inputPlaceholder: '在这里输入您的问题...',
+        send: '发送',
+        sending: '生成中...',
+        result: '对话结果',
+        noHistory: '当前暂无对话记录',
+        cost: '单次对话消耗',
+        credits: '积分',
+        clear: '清空对话',
+        tips: {
+            title: '使用提示',
+            desc: '此助手直接调用 GPT-5.1 原生能力，不预设系统提示词。您可以用它进行头脑风暴、剧本润色、或者任何您需要的文本创作。'
+        },
+        conversationDetail: '对话详情'
     },
     contact: {
         title: '联系客服',

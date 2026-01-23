@@ -124,13 +124,13 @@ class PromptGenerationView(APIView):
 
         # 检查积分
         from django.conf import settings
-        cost = getattr(settings, 'PROMPT_GENERATION_COST', 10)
+        cost = getattr(settings, 'PROMPT_GENERATION_COST', 20)
         
         # Check active task to prevent spam
         active_task = PromptTask.objects.filter(
             user=user, 
             status__in=['PENDING', 'PROCESSING']
-        ).first()
+        ).exclude(model='gpt-5.1-chat').first()
         
         if active_task:
             return Response({
@@ -196,10 +196,94 @@ class ActivePromptTaskView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # Find latest pending or processing task
+        # Find latest pending or processing prompt task (not chat)
         task = PromptTask.objects.filter(
             user=request.user, 
             status__in=['PENDING', 'PROCESSING']
+        ).exclude(model='gpt-5.1-chat').order_by('-created_at').first()
+        
+        if task:
+            serializer = PromptTaskSerializer(task)
+            return Response(serializer.data)
+        return Response({"active": False})
+
+
+class AIChatAssistantView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        prompt = request.data.get('prompt')
+
+        if not prompt:
+            return Response({"error": "Prompt is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 检查积分
+        from django.conf import settings
+        cost = getattr(settings, 'PROMPT_GENERATION_COST', 20)
+        
+        # Check active task to prevent spam
+        active_task = PromptTask.objects.filter(
+            user=user, 
+            status__in=['PENDING', 'PROCESSING'],
+            model='gpt-5.1-chat'
+        ).first()
+        
+        if active_task:
+            return Response({
+                "message": "You have an active chat task.",
+                "task_id": active_task.id
+            }, status=status.HTTP_200_OK)
+
+        if user.credits < cost:
+            return Response(
+                {"error": f"Insufficient credits. You have {user.credits} credits, but need {cost} credits for a chat."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            with transaction.atomic():
+                 user.credits -= cost
+                 user.save()
+                 
+                 CreditTransaction.objects.create(
+                    user=user,
+                    amount=-cost,
+                    balance_after=user.credits,
+                    description=f"AI Chat Assistant Task"
+                 )
+            
+                 task = PromptTask.objects.create(
+                     user=user,
+                     raw_prompt=prompt,
+                     style='Chat',
+                     language='N/A',
+                     duration='N/A',
+                     model='gpt-5.1-chat',
+                     status='PENDING'
+                 )
+
+            # Start Async Task
+            SoraService.start_chat_assistant_task(task.id)
+            
+            return Response({
+                "task_id": task.id,
+                "message": "Chat processing started."
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ActiveChatTaskView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Find latest pending or processing chat task
+        task = PromptTask.objects.filter(
+            user=request.user, 
+            status__in=['PENDING', 'PROCESSING'],
+            model='gpt-5.1-chat'
         ).order_by('-created_at').first()
         
         if task:

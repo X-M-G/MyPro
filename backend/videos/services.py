@@ -588,7 +588,7 @@ class SoraService:
         
         # Optimize for faster feedback: Poll every 10s
         # 10 minutes coverage: 10 * 60 / 10 = 60 polls
-        MAX_POLLS = 60 
+        MAX_POLLS = 120 
         INTERVAL = 10 
         
         start_time = time.time()
@@ -679,9 +679,8 @@ class SoraService:
                 user=task.user,
                 raw_prompt=task.raw_prompt,
                 style=task.style,
-                language=task.language,
                 optimized_prompt=optimized_prompt,
-                credits_used=10 # Assuming 10 as per previous setting
+                credits_used=getattr(settings, 'PROMPT_GENERATION_COST', 20)
             )
             
         except Exception as e:
@@ -692,8 +691,20 @@ class SoraService:
                 task.failure_reason = str(e)
                 task.save()
                 
-                # Refund credits logic could go here if we want to be strict
-                # For now let's keep it simple or implement refund
+                # 退还积分
+                with transaction.atomic():
+                    from users.models import CreditTransaction
+                    cost = getattr(settings, 'PROMPT_GENERATION_COST', 20)
+                    task.user.refresh_from_db()
+                    task.user.credits += cost
+                    task.user.save()
+                    
+                    CreditTransaction.objects.create(
+                        user=task.user,
+                        amount=cost,
+                        balance_after=task.user.credits,
+                        description=f"Refund for failed prompt task #{task.id}"
+                    )
             except:
                 pass
 
@@ -716,6 +727,90 @@ class SoraService:
             f"5. Keep it clear and well-structured "
             f"6. Include the duration requirement in the prompt naturally if relevant, or just ensure the description fits the {duration} length. "
             f"7. Output ONLY the optimized prompt text, no explanations."
+            '''参考提示词如下：
+            Style & Tone
+            Live-action family short scene, British home realism. High-energy cute confrontation. Feels like a TV sitcom moment captured naturally. Clear audio, strong emotional contrast, playful but intense. Not vlog-style, not staged for camera.
+
+            Scene Description
+            A bright British living room in daytime.
+            Soft daylight pours in through a window.
+            A thick, soft carpet covers the floor.
+
+            At the center of the frame, a 2-year-old chubby British toddler is kneeling on the carpet, leaning forward with both hands on the floor, body tense and expressive.
+            Directly in front of him sits a small, friendly corgi, ears up, alert but harmless.
+
+            They are very close, face to face, locked in a noisy standoff.
+
+            The toddler cannot speak words — only loud, emotional early vocal sounds.
+            The corgi reacts instinctively, barking loudly but playfully, never aggressive.
+
+            Cinematography
+
+            Camera shot: medium-wide shot, eye level with the toddler
+
+            Framing: toddler and corgi both centered, facing each other, always in frame
+
+            Camera movement: minimal handheld drift, TV-drama realism
+
+            Depth of field: moderate, subjects sharp, background softly blurred
+
+            Lighting: soft natural daylight with warm indoor fill
+
+            Mood: playful conflict, high tension, cute chaos
+
+            Actions & Timing (15s total)
+
+            0–3s
+            The toddler drops into a firm kneeling position, leans forward suddenly, and shouts loudly with baby sounds.
+
+            3–7s
+            The corgi barks back loudly, ears perked, body leaning slightly forward.
+            The toddler answers immediately, even louder, pounding one hand on the carpet.
+
+            7–11s
+            The toddler squeals at full volume, face intense but not scared.
+            The corgi responds with rapid, loud barks, tail wagging — energetic, not aggressive.
+
+            11–15s
+            Both pause for a split second, staring each other down.
+            Then they erupt together — loud baby yelling versus loud playful barking — the peak of the confrontation.
+
+            Vocalizations / Audio Cues
+            (No real words, no subtitles)
+
+            Toddler (very loud, emotional):
+            “AH! AH! EH! DAAAH!”
+
+            Corgi (loud but friendly):
+            “WOOF! WOOF!”
+            “RAFF! RAFF!”
+            “Wuh-woof!”
+
+            Audio Notes
+
+            Baby vocalizations clearly louder than room ambience
+
+            Dog barks strong and crisp, non-threatening
+
+            No human speech
+
+            No music
+
+            Natural indoor acoustics
+
+            Behavior & Safety Constraints
+
+            No biting, no lunging
+
+            No real words from the toddler
+
+            No one looks into the camera
+
+            Both remain face to face
+
+            Feels like actors in a short TV scene
+            
+            '''
         )
 
         try:
@@ -723,7 +818,7 @@ class SoraService:
             # ... calls ...
             client = OpenAI(
                 api_key=settings.OPENAI_API_KEY,
-                base_url="https://api.jiekou.ai/openai"
+                base_url=settings.OPENAI_BASE_URL
             )
             chat_completion_res = client.chat.completions.create(
                 model="gpt-5.1",
@@ -731,11 +826,95 @@ class SoraService:
                     {"role": "system", "content": system_content},
                     {"role": "user", "content": raw_prompt}
                 ],
-                max_tokens=128000,
+                max_completion_tokens=4096,
             )
 
             optimized_prompt = chat_completion_res.choices[0].message.content.strip()
             return optimized_prompt
+
+        except Exception as e:
+            raise e
+
+    @staticmethod
+    def start_chat_assistant_task(task_id):
+        """启动异步大模型对话任务"""
+        thread = threading.Thread(target=SoraService._handle_chat_task, args=(task_id,))
+        thread.start()
+
+    @staticmethod
+    def _handle_chat_task(task_id):
+        from .models import PromptTask, PromptHistory
+        try:
+            task = PromptTask.objects.get(id=task_id)
+            task.status = 'PROCESSING'
+            task.save()
+            
+            # GPT-5.1 调用
+            response_text = SoraService._generate_chat_logic(task.user, task.raw_prompt)
+            
+            # 更新任务状态
+            task.optimized_prompt = response_text
+            task.status = 'SUCCESS'
+            task.save()
+            
+            # 创建历史记录
+            cost = getattr(settings, 'PROMPT_GENERATION_COST', 20)
+            PromptHistory.objects.create(
+                user=task.user,
+                raw_prompt=task.raw_prompt,
+                style='Chat',
+                language='N/A',
+                optimized_prompt=response_text,
+                credits_used=cost
+            )
+            
+        except Exception as e:
+            print(f"Chat task failed: {str(e)}")
+            try:
+                task = PromptTask.objects.get(id=task_id)
+                task.status = 'FAILED'
+                task.failure_reason = str(e)
+                task.save()
+                
+                # 退还积分
+                with transaction.atomic():
+                    from users.models import CreditTransaction
+                    cost = getattr(settings, 'PROMPT_GENERATION_COST', 20)
+                    task.user.refresh_from_db()
+                    task.user.credits += cost
+                    task.user.save()
+                    
+                    CreditTransaction.objects.create(
+                        user=task.user,
+                        amount=cost,
+                        balance_after=task.user.credits,
+                        description=f"Refund for failed chat task #{task.id}"
+                    )
+            except:
+                pass
+
+    @staticmethod
+    def _generate_chat_logic(user, prompt):
+        """GPT-5.1 调用逻辑 (无系统提示词)"""
+        from django.conf import settings
+        
+        try:
+            print(f"Generating chat response for user {user.id}")
+            client = OpenAI(
+                api_key=settings.OPENAI_API_KEY,
+                base_url=settings.OPENAI_BASE_URL
+            )
+            chat_completion_res = client.chat.completions.create(
+                model="gpt-5.1",
+                messages=[
+                    {"role": "system", "content": '你是一个大模型对话助手。请务必以纯文本形式回答，不要使用任何 Markdown 语法（如不要使用 ##, **, ---, [], () 等符号）。请使用简单的换行和空行来分隔段落，确保内容清晰易读。'},
+                    {"role": "user", "content": prompt}
+                ],
+                max_completion_tokens=4096,
+            )
+
+            result = chat_completion_res.choices[0].message.content.strip()
+            return result
 
         except Exception as e:
             raise e

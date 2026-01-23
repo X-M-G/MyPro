@@ -11,7 +11,7 @@ response = client.chat.completions.create(
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello, how are you?"}
     ],
-    max_tokens=128000,
+    max_completion_tokens=4096,
     # temperature=0.7
 )
 

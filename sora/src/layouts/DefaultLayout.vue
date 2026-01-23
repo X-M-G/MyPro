@@ -12,7 +12,8 @@ import {
   Settings,
   ChevronRight,
   Headphones,
-  Bell
+  Bell,
+  MessageSquare
 } from 'lucide-vue-next'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
@@ -51,6 +52,12 @@ function handleLogout() {
           <router-link to="/prompt-assistant" class="nav-item" active-class="active">
             <div class="icon-wrapper"><Sparkles :size="20" /></div>
             <span>{{ t('nav.assistant') }}</span>
+            <ChevronRight class="chevron" :size="16" />
+          </router-link>
+
+          <router-link to="/ai-chat" class="nav-item" active-class="active">
+            <div class="icon-wrapper"><MessageSquare :size="20" /></div>
+            <span>{{ t('nav.chatAssistant') }}</span>
             <ChevronRight class="chevron" :size="16" />
           </router-link>
           

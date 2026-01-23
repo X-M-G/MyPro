@@ -103,19 +103,29 @@ const closeModal = () => {
   showModal.value = false
 }
 
-const downloadVideo = (url: string, id: string | number) => {
+const downloadingIds = ref<Set<string | number>>(new Set())
+
+const downloadVideo = async (url: string, id: string | number) => {
   if (!url) return
+  if (downloadingIds.value.has(id)) return
+  
+  downloadingIds.value.add(id)
   try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = `sora_video_${id}_${Date.now()}.mp4`
-    a.target = "_blank"
+    a.href = blobUrl
+    a.download = `sora_video_${id}.mp4`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    window.URL.revokeObjectURL(blobUrl)
   } catch (e) {
     console.error("Download failed:", e)
     window.open(url, '_blank')
+  } finally {
+    downloadingIds.value.delete(id)
   }
 }
 
@@ -149,7 +159,7 @@ const formatDate = (dateStr: string) => {
       </div>
     </div>
 
-    <div v-if="videoStore.loading" class="loading-container">
+    <div v-if="videoStore.loading && filteredTasks.length === 0" class="loading-container">
       <Loader2 class="animate-spin text-primary" :size="48" />
     </div>
 

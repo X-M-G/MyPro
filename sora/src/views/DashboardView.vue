@@ -30,6 +30,23 @@ const error = ref('')
 const showHistory = ref(false)
 const showModal = ref(false)
 const selectedVideo = ref<any>(null)
+const isPromptExpanded = ref(false)
+const isFullScreenPrompt = ref(false)
+const fullScreenPrompt = ref('')
+
+const toggleFullScreen = () => {
+  if (!isFullScreenPrompt.value) {
+    fullScreenPrompt.value = prompt.value
+    isFullScreenPrompt.value = true
+  } else {
+    isFullScreenPrompt.value = false
+  }
+}
+
+const applyFullScreenPrompt = () => {
+  prompt.value = fullScreenPrompt.value
+  isFullScreenPrompt.value = false
+}
 
 const availableDurations = computed(() => {
   return model.value === 'sora2-pro' ? [15, 25] : [10, 15]
@@ -121,19 +138,30 @@ const closeModal = () => {
   selectedVideo.value = null
 }
 
-const downloadVideo = (url: string, id: string) => {
+const downloadingIds = ref<Set<string>>(new Set())
+
+const downloadVideo = async (url: string, id: string) => {
   if (!url) return
+  if (downloadingIds.value.has(id)) return
+  
+  downloadingIds.value.add(id)
   try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = `sora_video_${id}_${Date.now()}.mp4`
-    a.target = "_blank"
+    a.href = blobUrl
+    a.download = `sora_video_${id}.mp4`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    window.URL.revokeObjectURL(blobUrl)
   } catch (e) {
     console.error("Download failed:", e)
+    // Fallback to direct link if fetch fails (e.g. CORS)
     window.open(url, '_blank')
+  } finally {
+    downloadingIds.value.delete(id)
   }
 }
 
@@ -144,6 +172,40 @@ onMounted(() => {
 
 <template>
   <div class="page-container dashboard">
+    <!-- Full-screen Prompt Editor Overlay -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isFullScreenPrompt" class="fullscreen-editor-overlay">
+          <div class="editor-container glass-card">
+            <header class="editor-header">
+              <div class="header-info">
+                <Sparkles :size="20" class="text-primary" />
+                <h3>{{ t("dashboard.promptLabel") }} - {{ t("common.edit") || "Edit" }}</h3>
+              </div>
+              <div class="header-actions">
+                <span class="char-count-large">
+                  {{ fullScreenPrompt.length }} {{ t("dashboard.chars") }}
+                </span>
+                <button class="btn btn-ghost btn-sm" @click="fullScreenPrompt = ''">
+                  {{ t("common.clear") || "Clear" }}
+                </button>
+                <button class="btn btn-primary btn-sm" @click="applyFullScreenPrompt">
+                  {{ t("common.confirm") }}
+                </button>
+              </div>
+            </header>
+            <main class="editor-main">
+              <textarea
+                v-model="fullScreenPrompt"
+                class="fullscreen-textarea"
+                :placeholder="t('dashboard.promptPlaceholder')"
+                autofocus
+              ></textarea>
+            </main>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
     <div class="main-layout animate-fade-in">
       <section class="panel-section animate-fade-up" style="animation-delay: 0.1s">
         <div class="glass-card form-card">
@@ -160,13 +222,20 @@ onMounted(() => {
               <label class="label">
                 <Type :size="16" /> {{ t("dashboard.promptLabel") }}
               </label>
-              <div class="input-wrapper">
+              <div class="input-wrapper" :class="{ 'expanded': isPromptExpanded }">
                 <textarea
                   v-model="prompt"
                   class="textarea modern-textarea"
                   :placeholder="t('dashboard.promptPlaceholder')"
-                  rows="5"
+                  :rows="isPromptExpanded ? 15 : 5"
                 ></textarea>
+                <button 
+                  class="btn-expand" 
+                  @click="toggleFullScreen"
+                  :title="t('common.expand')"
+                >
+                  <Maximize2 :size="16" />
+                </button>
                 <div class="input-glow"></div>
                 <span class="char-count" :class="{ 'has-text': prompt.length > 0 }">
                   {{ prompt.length }} {{ t("dashboard.chars") }}
@@ -614,6 +683,31 @@ onMounted(() => {
 }
 .modern-textarea {
   min-height: 140px;
+  transition: min-height 0.3s ease;
+}
+.input-wrapper.expanded .modern-textarea {
+  min-height: 400px;
+}
+.btn-expand {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: var(--bg-200);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.2s;
+  z-index: 10;
+}
+.btn-expand:hover {
+  background: var(--bg-300);
+  color: var(--color-primary);
 }
 .char-count {
   position: absolute;
@@ -1266,5 +1360,99 @@ onMounted(() => {
 }
 .spin {
   animation: spin 1s linear infinite;
+}
+.fullscreen-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.editor-container {
+  width: 95vw;
+  height: 90vh;
+  max-width: 1400px;
+  background: var(--bg-100);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.editor-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-100);
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-info h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.char-count-large {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.editor-main {
+  flex: 1;
+  padding: 1.5rem;
+  background: var(--bg-100);
+  overflow: hidden;
+}
+
+.fullscreen-textarea {
+  width: 100%;
+  height: 100%;
+  padding: 2rem;
+  background: var(--bg-200);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--color-text-main);
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.fullscreen-textarea:focus {
+  border-color: var(--color-primary);
+  background: var(--bg-100);
+  box-shadow: 0 0 0 4px var(--color-primary-glow);
+}
+
+@media (max-width: 768px) {
+  .editor-container {
+    height: 95vh;
+    width: 98vw;
+  }
+  .header-actions {
+    gap: 0.75rem;
+  }
 }
 </style>

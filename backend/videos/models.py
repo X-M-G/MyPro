@@ -66,7 +66,7 @@ class PromptHistory(models.Model):
     optimized_prompt = models.TextField(help_text="AI优化后的提示词")
     
     # 消耗的积分
-    credits_used = models.IntegerField(default=15)
+    credits_used = models.IntegerField(default=20)
     
     # 时间戳
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

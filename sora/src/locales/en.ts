@@ -1,4 +1,4 @@
-// English locale
+﻿// English locale
 export default {
   home: {
     hero: {
@@ -51,9 +51,18 @@ export default {
           features: 'High-quality Prompt Construction',
           duration: '-',
           resolution: '-',
-          cost: '10',
+          cost: '20',
           eta: 'Real-time',
           highlights: 'Enhanced Generation Results'
+        },
+        chatAssistant: {
+          name: 'AI Chat Assistant',
+          features: 'GPT-5.1 Intelligent Chat',
+          duration: '-',
+          resolution: '-',
+          cost: '20',
+          eta: 'Real-time',
+          highlights: 'Deep Understanding, Creative Aid'
         }
       },
       details: {
@@ -68,6 +77,7 @@ export default {
     dashboard: 'Dashboard',
     generator: 'Video Generator',
     assistant: 'Prompt Assistant',
+    chatAssistant: 'AI Chat',
     history: 'History',
     profile: 'Profile',
     credits: 'Credits',
@@ -80,6 +90,7 @@ export default {
     error: 'Error',
     success: 'Success',
     cancel: 'Cancel',
+    clear: 'Clear',
     confirm: 'Confirm',
     back: 'Back',
     save: 'Save',
@@ -98,7 +109,8 @@ export default {
     show: 'Show',
     search: 'Search',
     actions: 'Actions',
-    clickDetails: 'Click for details'
+    clickDetails: 'Click for details',
+    details: 'Detail'
   },
 
   auth: {
@@ -342,6 +354,24 @@ export default {
       outputLanguageTitle: 'Output Language',
       outputLanguageDesc: 'Specifies the language used for the optimized prompt output.'
     }
+  },
+  chatAssistant: {
+    title: 'AI Chat Assistant',
+    subtitle: 'All-around AI companion based on GPT-5.1',
+    inputLabel: 'Send Message',
+    inputPlaceholder: 'Type your message here...',
+    send: 'Send',
+    sending: 'Generating...',
+    result: 'Chat Result',
+    noHistory: 'No chat history yet',
+    cost: 'Single Chat',
+    credits: 'Credits',
+    clear: 'Clear Chat',
+    tips: {
+      title: 'Usage Tips',
+      desc: 'This assistant directly calls GPT-5.1 native power without preset system prompts. Use it for brainstorming, script polishing, or any text creation you need.'
+    },
+    conversationDetail: 'Conversation Detail'
   },
   contact: {
     title: 'Contact Support',

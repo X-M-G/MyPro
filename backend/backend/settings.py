@@ -161,7 +161,8 @@ REST_FRAMEWORK = {
 # OpenAI 助手
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL', "https://api.jiekou.ai/openai")
-PROMPT_GENERATION_COST = 10
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', "gpt-5.1")
+PROMPT_GENERATION_COST = 20
 
 # Sora API
 SORA_API_KEY = os.getenv('SORA_API_KEY')

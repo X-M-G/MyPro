@@ -63,7 +63,7 @@ class RequestLogMiddleware:
                 if '/videos/generate/' in request.path:
                     api_type = 'video'
                     DailyStats.objects.filter(date=today).update(video_gen_count=F('video_gen_count') + 1)
-                elif '/videos/prompt/generate/' in request.path:
+                elif '/videos/prompt/generate/' in request.path or '/videos/ai-chat/generate/' in request.path:
                     api_type = 'prompt'
                     DailyStats.objects.filter(date=today).update(prompt_gen_count=F('prompt_gen_count') + 1)
                 

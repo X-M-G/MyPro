@@ -6,7 +6,9 @@ from .views import (
     PromptGenerationView,
     PromptTaskDetailView,
     ActivePromptTaskView,
-    VideoStreamView  # 确保导入了新视图
+    VideoStreamView,
+    AIChatAssistantView,
+    ActiveChatTaskView
 )
 
 from .views import PromptHistoryListView, PromptHistoryDeleteView
@@ -19,6 +21,10 @@ urlpatterns = [
     path('prompt/generate/', PromptGenerationView.as_view(), name='generate-prompt'),
     path('prompt/task/<int:pk>/', PromptTaskDetailView.as_view(), name='prompt-task-detail'),
     path('prompt/active/', ActivePromptTaskView.as_view(), name='prompt-active-task'),
+
+    # 辅助功能：大模型对话
+    path('ai-chat/generate/', AIChatAssistantView.as_view(), name='ai-chat-generate'),
+    path('ai-chat/active/', ActiveChatTaskView.as_view(), name='ai-chat-active-task'),
 
     # 列表和详情
     path('list/', VideoListView.as_view(), name='video-list'),
