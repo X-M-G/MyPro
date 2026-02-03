@@ -37,6 +37,15 @@ export default {
           eta: '4-8 Minutes',
           highlights: 'Basic Video Generation'
         },
+        sora2Pro: {
+          name: 'sora2-pro',
+          features: 'Text-to-Video, Image-to-Video',
+          duration: '15/25 Seconds',
+          resolution: '1080P (Full HD)',
+          cost: '300 / 500',
+          eta: '10-15 Minutes',
+          highlights: 'HD quality, longer video, supports dual channels'
+        },
         sora2ProC1: {
           name: 'sora2-pro Channel 1',
           features: 'Text-to-Video, Image-to-Video',

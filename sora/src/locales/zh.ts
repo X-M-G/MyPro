@@ -37,6 +37,15 @@ export default {
                     eta: '4-8 分钟',
                     highlights: '基础视频生成'
                 },
+                sora2Pro: {
+                    name: 'sora2-pro',
+                    features: '文生视频、图生视频',
+                    duration: '15/25 秒',
+                    resolution: '1080P (全高清)',
+                    cost: '300 / 500',
+                    eta: '10-15 分钟',
+                    highlights: '高清画质、更长视频、支持新旧双线路'
+                },
                 sora2ProC1: {
                     name: 'sora2-pro 通道1',
                     features: '文生视频、图生视频',
